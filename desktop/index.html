@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selenforge Editor</title>
+    <link rel="stylesheet" href="./app.css">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand-block">
+                <img class="brand-logo" src="../Selenforge.png" alt="Selenforge">
+                <div class="brand-copy">
+                    <div class="brand-kicker">StarAnvil Editor</div>
+                    <div class="brand-title">Selenforge 月铸引擎</div>
+                </div>
+            </div>
+
+            <div class="toolbar-block">
+                <button class="toolbar-button" data-toggle-panel="scene" type="button">场景</button>
+                <button class="toolbar-button" data-toggle-panel="assets" type="button">资源</button>
+                <button class="toolbar-button" data-toggle-panel="console" type="button">控制台</button>
+                <button class="toolbar-button" data-toggle-panel="inspector" type="button">细节</button>
+                <button class="toolbar-button" data-gizmo-mode="translate" type="button">平移</button>
+                <button class="toolbar-button" data-gizmo-mode="rotate" type="button">旋转</button>
+                <button class="toolbar-button" data-gizmo-mode="scale" type="button">缩放</button>
+                <button class="toolbar-button" id="load-project-button" type="button">载入</button>
+                <button class="toolbar-button" id="save-project-button" type="button">保存</button>
+                <button class="toolbar-button" id="build-game-button" type="button">构建</button>
+            </div>
+
+            <div class="camera-block">
+                <label for="camera-select">相机</label>
+                <select id="camera-select"></select>
+            </div>
+        </header>
+
+        <main class="viewport-shell">
+            <section class="viewport-panel">
+                <canvas id="viewport-canvas"></canvas>
+
+                <div class="viewport-overlay top-left">
+                    <div id="status-banner" class="status-banner">正在连接 Selenforge 工作区...</div>
+                </div>
+
+                <div class="viewport-overlay top-right">
+                    <div id="project-chip" class="overlay-chip">未加载项目</div>
+                    <div id="camera-chip" class="overlay-chip accent">编辑器透视相机</div>
+                </div>
+
+                <div class="viewport-overlay bottom-left">
+                    <div class="hint-card">
+                        <div>右键拖动：旋转视角</div>
+                        <div>右键 + WSADQE：移动编辑器相机</div>
+                        <div>左键单击：选择对象</div>
+                        <div>Delete：删除当前对象</div>
+                        <div>Ctrl+S：保存当前项目快照</div>
+                        <div>资源面板点击 Moon 脚本可直接编辑</div>
+                    </div>
+                </div>
+            </section>
+
+            <aside id="scene-drawer" class="drawer drawer-left">
+                <div class="drawer-head">
+                    <div>
+                        <div class="drawer-kicker">Scene</div>
+                        <h2>场景面板</h2>
+                    </div>
+                    <button class="toolbar-button compact" data-close-panel="scene" type="button">关闭</button>
+                </div>
+
+                <div class="drawer-toolbar">
+                    <input id="scene-filter" type="text" placeholder="搜索游戏对象">
+                    <button class="toolbar-button compact" id="scene-add-button" type="button">添加</button>
+                    <button class="toolbar-button compact ghost" id="scene-delete-button" type="button">删除</button>
+                </div>
+
+                <div id="scene-list" class="scene-list"></div>
+            </aside>
+
+            <aside id="inspector-drawer" class="drawer drawer-right">
+                <div class="drawer-head">
+                    <div>
+                        <div class="drawer-kicker">Inspector</div>
+                        <h2>对象细节</h2>
+                    </div>
+                    <button class="toolbar-button compact" data-close-panel="inspector" type="button">关闭</button>
+                </div>
+
+                <div id="inspector-content" class="inspector-content"></div>
+            </aside>
+
+            <section id="assets-drawer" class="drawer drawer-bottom">
+                <div class="drawer-head">
+                    <div>
+                        <div class="drawer-kicker">Assets</div>
+                        <h2>资源面板</h2>
+                    </div>
+                    <button class="toolbar-button compact" data-close-panel="assets" type="button">关闭</button>
+                </div>
+
+                <div class="drawer-toolbar drawer-toolbar-single">
+                    <button class="toolbar-button compact" id="asset-create-script-button" type="button">新建 Moon 脚本</button>
+                </div>
+
+                <div id="asset-list" class="asset-grid"></div>
+            </section>
+
+            <section id="console-drawer" class="drawer drawer-bottom">
+                <div class="drawer-head">
+                    <div>
+                        <div class="drawer-kicker">Console</div>
+                        <h2>运行记录</h2>
+                    </div>
+                    <button class="toolbar-button compact" data-close-panel="console" type="button">关闭</button>
+                </div>
+
+                <div id="console-list" class="console-list"></div>
+            </section>
+        </main>
+    </div>
+
+    <div id="scene-context-menu" class="context-menu"></div>
+    <div id="toast" class="toast"></div>
+
+    <div id="confirm-mask" class="modal-mask hidden">
+        <div class="modal-card">
+            <div class="drawer-kicker">Confirmation</div>
+            <h3 id="confirm-title">确认操作</h3>
+            <p id="confirm-text">确认继续吗？</p>
+            <div class="modal-actions">
+                <button class="toolbar-button compact ghost" id="confirm-cancel" type="button">取消</button>
+                <button class="toolbar-button compact" id="confirm-ok" type="button">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="script-editor-mask" class="modal-mask hidden">
+        <div class="modal-card script-editor-card">
+            <div class="drawer-kicker">Moon Script</div>
+            <h3 id="script-editor-title">脚本编辑器</h3>
+            <p id="script-editor-meta">编辑 MoonLang 脚本，保存项目时会一起写入当前项目目录，并生成对应的 JS 输出。</p>
+
+            <div class="detail-section script-editor-detail-grid">
+                <label class="detail-row"><span>Name</span><div class="field-control"><input id="script-editor-name" type="text" placeholder="script_name.moon"></div></label>
+                <label class="detail-row"><span>Description</span><div class="field-control"><input id="script-editor-description" type="text" placeholder="Describe this script"></div></label>
+                <label class="detail-row"><span>Template</span><div class="field-control"><select id="script-editor-template"><option value="game">Game Loop</option><option value="rotator">Rotator</option><option value="system">System Task</option></select></div></label>
+            </div>
+
+            <div class="script-editor-actions">
+                <select id="script-editor-role" class="toolbar-button compact">
+                    <option value="game">游戏脚本</option>
+                    <option value="system">系统脚本</option>
+                </select>
+                <button class="toolbar-button compact ghost" id="script-editor-template-apply" type="button">Apply Template</button>
+                <button class="toolbar-button compact ghost" id="script-editor-duplicate" type="button">Duplicate</button>
+                <button class="toolbar-button compact ghost" id="script-editor-delete" type="button">Delete</button>
+                <button class="toolbar-button compact ghost" id="script-editor-run" type="button">运行系统脚本</button>
+                <button class="toolbar-button compact ghost" id="script-editor-close" type="button">关闭</button>
+                <button class="toolbar-button compact" id="script-editor-apply" type="button">应用到项目</button>
+            </div>
+
+            <textarea id="script-editor-source" class="script-editor-source" spellcheck="false"></textarea>
+
+            <div class="script-editor-preview-block">
+                <div class="drawer-kicker">Compiled JS Preview</div>
+                <pre id="script-editor-preview" class="script-editor-preview"></pre>
+            </div>
+
+            <div class="script-editor-preview-block">
+                <div class="drawer-kicker">System Output</div>
+                <pre id="script-editor-output" class="script-editor-preview"></pre>
+            </div>
+        </div>
+    </div>
+
+    <div id="build-mask" class="modal-mask hidden">
+        <div class="modal-card script-editor-card">
+            <div class="drawer-kicker">Build</div>
+            <h3 id="build-title">游戏构建</h3>
+            <p id="build-meta">将当前最新项目快照打包为可分发的游戏目录与 EXE。</p>
+            <div class="detail-section">
+                <label class="detail-row"><span>游戏名称</span><div class="field-control"><input id="build-game-name" type="text" value="SelenforgeGame"></div></label>
+                <label class="detail-row"><span>公司名称</span><div class="field-control"><input id="build-company-name" type="text" value="Selenforge"></div></label>
+                <label class="detail-row"><span>版本号</span><div class="field-control"><input id="build-version" type="text" value="0.1.0"></div></label>
+                <label class="detail-row"><span>窗口宽度</span><div class="field-control"><input id="build-width" type="number" value="1280"></div></label>
+                <label class="detail-row"><span>窗口高度</span><div class="field-control"><input id="build-height" type="number" value="720"></div></label>
+            </div>
+            <div class="script-editor-actions">
+                <button class="toolbar-button compact ghost" id="build-close" type="button">关闭</button>
+                <button class="toolbar-button compact" id="build-start" type="button">开始构建</button>
+            </div>
+            <div class="script-editor-preview-block">
+                <div class="drawer-kicker">Build Output</div>
+                <pre id="build-output" class="script-editor-preview"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="../vendor/moonflare.js"></script>
+    <script src="./moon-script-tools.js"></script>
+    <script src="./app.js"></script>
+</body>
+</html>

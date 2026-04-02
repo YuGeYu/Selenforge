@@ -1,0 +1,21 @@
+{
+  "name": "selenforge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Selenforge workspace containing the Moonflare runtime and the StarAnvil editor.",
+  "workspaces": [
+    "engine",
+    "editor"
+  ],
+  "scripts": {
+    "install:engine": "npm install --prefix engine",
+    "install:editor": "npm install --prefix editor",
+    "build:engine": "npm run build --prefix engine",
+    "build:editor": "npm run build --prefix editor",
+    "build:desktop": "build.bat",
+    "build": "build.bat",
+    "lint:engine": "npm run lint --prefix engine",
+    "lint:editor": "npm run lint --prefix editor",
+    "dev:editor": "npm run develop --prefix editor"
+  }
+}

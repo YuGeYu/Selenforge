@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>__SELENFORGE_GAME_NAME__</title>
+    <style>
+        html, body { margin: 0; width: 100%; height: 100%; background: #08111a; overflow: hidden; }
+        #app { width: 100%; height: 100%; display: block; }
+    </style>
+</head>
+<body>
+    <canvas id="app"></canvas>
+    <script>
+        document.addEventListener('contextmenu', function (event) {
+            event.preventDefault();
+        });
+    </script>
+    <script src="../vendor/moonflare.js"></script>
+    <script src="./game.js"></script>
+</body>
+</html>

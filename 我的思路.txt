@@ -1,0 +1,565 @@
+我会分成五部分讲：
+
+1. 项目总体思路
+2. 技术架构
+3. 最小可行版本（MVP）
+4. 详细开发步骤
+5. 项目长期发展路线
+
+---
+
+# 一、项目总体思路
+
+你的目标不是重新开发一个完整3D引擎，而是：
+
+**让 MoonLang 成为 PlayCanvas 的脚本语言。**
+
+也就是说：
+
+* 游戏逻辑：MoonLang
+* 渲染与场景：PlayCanvas
+* 打包运行：桌面 EXE
+
+整体结构：
+
+```
+MoonLang Script
+        ↓
+Moon → JS 转换器
+        ↓
+JavaScript Runtime
+        ↓
+PlayCanvas Engine
+        ↓
+WebGL 渲染
+        ↓
+桌面壳 (EXE)
+```
+
+换句话说：
+
+**MoonLang 只是游戏逻辑层。**
+
+而：
+
+* 渲染
+* 材质
+* 动画
+* GPU
+* 物理
+
+全部交给 PlayCanvas。
+
+这样你可以避免一个巨大工程：
+
+**自己写渲染器。**
+
+---
+
+# 二、技术架构
+
+整个系统可以拆成五个模块。
+
+## 1 MoonLang → JS 转换器
+
+作用：
+
+把 MoonLang 脚本转换成 JavaScript。
+
+例如：
+
+MoonLang：
+
+```
+function add(a, b):
+    return a + b
+end
+```
+
+转换成：
+
+```
+function add(a, b) {
+    return a + b;
+}
+```
+
+转换后代码会在 PlayCanvas 运行。
+
+---
+
+## 2 Moon API 层
+
+设计一套 **Moon 游戏 API**。
+
+例如：
+
+```
+Scene
+Entity
+Transform
+Camera
+Input
+Time
+Physics
+Audio
+```
+
+MoonLang 游戏脚本使用这些 API。
+
+例如：
+
+```
+player.move_forward(5)
+```
+
+---
+
+## 3 PlayCanvas 适配层
+
+把 Moon API 映射到 PlayCanvas。
+
+例如：
+
+Moon API：
+
+```
+entity.set_position(x,y,z)
+```
+
+PlayCanvas：
+
+```
+entity.setPosition(x,y,z)
+```
+
+这一层是核心。
+
+---
+
+## 4 游戏运行时
+
+运行结构：
+
+```
+MoonLang Script
+      ↓
+JS
+      ↓
+PlayCanvas Scene
+```
+
+每帧执行：
+
+```
+start()
+update(dt)
+```
+
+---
+
+## 5 桌面 EXE 打包
+
+使用桌面壳技术：
+
+推荐：
+
+**WebView2**
+
+最终结构：
+
+```
+Game.exe
+│
+├ PlayCanvas Engine
+├ JS Runtime
+├ MoonLang Script
+└ 游戏资源
+```
+
+用户看到的是普通游戏窗口。
+
+---
+
+# 三、最小可行版本（MVP）
+
+第一版不要做复杂功能。
+
+目标：
+
+**让一个 MoonLang 脚本控制一个 3D 物体。**
+
+功能只需要：
+
+* Moon → JS 转换
+* PlayCanvas 场景加载
+* 实体移动
+* 键盘输入
+* update循环
+* 打包 EXE
+
+例如：
+
+MoonLang：
+
+```
+class Player:
+
+    function update(dt):
+        if Input.key("W"):
+            self.z = self.z + dt * 5
+        end
+
+    end
+
+end
+```
+
+运行后：
+
+玩家按 W 键前进。
+
+只要做到这个：
+
+**项目就成功跑起来了。**
+
+---
+
+# 四、详细开发步骤
+
+下面是完整开发流程。
+
+一步一步按顺序做。
+
+---
+
+# 第一步：研究 PlayCanvas Engine
+
+下载源码：
+
+PlayCanvas Engine GitHub。
+
+先运行官方 demo。
+
+了解三个核心概念：
+
+* Entity
+* Component
+* Script
+
+例如：
+
+```
+entity.addComponent("model")
+entity.setPosition(0,0,0)
+```
+
+这是未来 Moon API 的映射对象。
+
+---
+
+# 第二步：建立 PlayCanvas 本地运行环境
+
+创建一个简单网页：
+
+```
+index.html
+main.js
+```
+
+加载 PlayCanvas：
+
+```
+canvas
+scene
+camera
+light
+cube
+```
+
+确保：
+
+浏览器能看到一个旋转的立方体。
+
+---
+
+# 第三步：设计 Moon 游戏 API
+
+不要直接暴露 PlayCanvas。
+
+设计统一接口：
+
+```
+Scene
+Entity
+Transform
+Input
+Time
+Camera
+```
+
+例如：
+
+MoonLang：
+
+```
+entity = Scene.create_entity()
+entity.set_position(0,1,0)
+```
+
+PlayCanvas 内部：
+
+```
+new pc.Entity()
+entity.setPosition()
+```
+
+---
+
+# 第四步：实现 Moon → JS 转换器
+
+写一个简单脚本转换器。
+
+步骤：
+
+1 读取 Moon 文件
+
+2 转换语法
+
+例如：
+
+```
+function → function
+end → }
+if → if
+```
+
+3 输出 JS 文件。
+
+例如：
+
+```
+player.moon
+↓
+player.js
+```
+
+---
+
+# 第五步：实现 Moon Script Component
+
+在 PlayCanvas 中创建组件：
+
+```
+MoonScriptComponent
+```
+
+负责：
+
+* 加载 JS
+* 调用 start()
+* 每帧调用 update()
+
+例如：
+
+```
+script.update(dt)
+```
+
+---
+
+# 第六步：实现输入系统
+
+Moon API：
+
+```
+Input.key("W")
+```
+
+内部调用：
+
+PlayCanvas：
+
+```
+app.keyboard.isPressed(pc.KEY_W)
+```
+
+---
+
+# 第七步：实现实体绑定
+
+Moon 脚本需要访问实体。
+
+例如：
+
+```
+self.entity
+```
+
+PlayCanvas：
+
+```
+this.entity
+```
+
+建立绑定关系。
+
+---
+
+# 第八步：资源加载
+
+支持：
+
+* glTF 模型
+* 纹理
+* 场景
+
+例如：
+
+```
+Scene.load("level1")
+```
+
+内部：
+
+PlayCanvas：
+
+```
+app.assets.loadFromUrl()
+```
+
+---
+
+# 第九步：制作简单编辑器
+
+编辑器可以是：
+
+**网页编辑器**
+
+功能：
+
+* 场景查看
+* 拖动物体
+* 修改属性
+* 运行游戏
+
+技术：
+
+```
+HTML
+CSS
+JavaScript
+```
+
+---
+
+# 第十步：桌面打包
+
+使用：
+
+**WebView2**
+
+生成：
+
+```
+Game.exe
+```
+
+结构：
+
+```
+exe
+html
+js
+assets
+```
+
+启动 WebView → 加载游戏。
+
+---
+
+# 五、长期发展路线
+
+如果 MVP 成功，可以继续发展。
+
+## 第二阶段
+
+增加：
+
+* 场景编辑器
+* 资源管理
+* 脚本热重载
+* 简单物理
+
+---
+
+## 第三阶段
+
+增加：
+
+* UI系统
+* 动画控制
+* 粒子系统
+* 光照工具
+
+---
+
+## 第四阶段
+
+形成完整工具链：
+
+```
+MoonLang
+MoonLang PlayCanvas SDK
+MoonLang Editor
+MoonLang Game Runtime
+```
+
+类似：
+
+```
+Unity + C#
+Godot + GDScript
+```
+
+---
+
+# 最终总结
+
+你的项目本质是：
+
+**MoonLang + PlayCanvas 的游戏开发工具链。**
+
+核心技术路线：
+
+```
+MoonLang
+   ↓
+Moon → JS 转换
+   ↓
+PlayCanvas Engine
+   ↓
+WebGL
+   ↓
+桌面 EXE
+```
+
+你的主要工作只有三个：
+
+1. MoonLang → JS 转换器
+2. Moon API → PlayCanvas API 映射
+3. 桌面运行时封装
+
+渲染、材质、GPU全部交给 PlayCanvas。
+
+这样：
+
+开发难度从：
+
+**开发完整3D引擎**
+
+变成：
+
+**开发语言适配层。**
+
+难度会降低一个数量级。
